@@ -12,4 +12,3 @@ Radio screen text sender
 Bluetooth A2DP & Handsfree
 MP3 Player over USB
 Car remote controller
-
