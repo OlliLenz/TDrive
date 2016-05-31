@@ -1,15 +1,15 @@
 # TDrive
-BMW Ibus communication library
+BMW IBUS communication program for Arduino
 
-TDrive is on work in progress Ibus library. The aim is providing Arduino interface and python interface for PC/Android. 
+TDrive is on work in progress Ibus application. The program is on early coding stage. It is going to be modular structure, user/developer will be able to enable desired modules.
 
-There will be collision detection, CD Changer emulation, Bluetooth Handsfree/Streaming functionalities. 
-
-Modules are respectively:
+Planned modules:
+Ibus debugger
 Ibus receiver
 Ibus sender
 CD Changer emulator
 Radio screen text sender
-Bluetooth handsfree
+Bluetooth A2DP & Handsfree
+MP3 Player over USB
+Car remote controller
 
-Coming soon...
