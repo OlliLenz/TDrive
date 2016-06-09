@@ -37,37 +37,6 @@ void setup() {
     USB.begin(9600, SERIAL_8E1);
 }
 
-//checksum calculator for IBUS
-byte iso_checksum(byte *data, byte len) //len is the number of bytes (not the # of last byte)
-{
-  byte crc=0;
-  for(byte i=0; i<len; i++)
-  {    
-    crc=crc^data[i];
-  }
-  return crc;
-}
-
-void IBUSSend(byte *data) {
-  send_sequence = true;
-  IBUS.write(data, data[1]+2);
-//  for (int i=0; i <= (len-1); i++){
-//    IBUS.write(data[i]);
-  send_sequence = false;
-  ready2send = false;
-  ibus_time = micros();
-}
-
-void process_ibus_message() {
-  msg_processed = true;
-  if (iso_checksum(IbusBuffer, ibus_len) == IbusBuffer[ibus_len - 1]) {
-    USBSend(IbusBuffer, ibus_len);
-    if (IbusBuffer [2] = DEVS [1]) {
-      cdc_set_parameters();
-    }
-  }
-}
-
 void loop() {
   if (end_of_message && !msg_processed){
     process_ibus_message();
@@ -76,6 +45,7 @@ void loop() {
   if (ibus_time - micros() > 1000 && !end_of_message){
     Serial.flush();
     end_of_message = true;
+    USB.write(IbusBuffer, IbusBuffer[1]);
     USB.println("end of message");
   }
   else if (ibus_time - micros() > 1500 && !ready2send) {
@@ -87,40 +57,8 @@ void loop() {
   #endif
 }
 
-void cdc_set_parameters() {
-  if (ibus_len = sizeof(HU_pulls_CDC)){
-    CDC_Registered = false;
-    
-  } else if (ibus_len = sizeof(HU_ReqPar_CDC)) {
-    CDC_par_sent = false;
-  } else {USB.println("Message not known to CDC!");}
-}
-
-void cdc_announcer() {
-  if (ready2send && !CDC_Registered) {
-    IBUS.write(CDC_Register, 5);
-    CDC_time = millis(); // To not to lose CDC emulation, time based check will be implemented.
-    CDC_Registered = true;
-  } else if (ready2send && !CDC_par_sent) {
-      IBUS.write(CDC_Status, 12);
-      CDC_par_sent = true;
-  }
-}
-
-
-
-void USBSend(byte data[], int len) { // Sends ibus buffer to the PC.
-  for (int i=0; i <= len; i++) {
-    USB.print(data[i], HEX);
-    USB.print(" ");
-  }
-  USB.println("");
-}
-
-
-
 void get_ibus_message() {
-  while (Serial.available() && !send_sequence) {
+  while (Serial.available()) {
     IbusBuffer[ibus_len] = Serial.read();
     ibus_time = micros();
     if (end_of_message) {
@@ -154,5 +92,80 @@ void get_ibus_message() {
     }
 }
 
+//checksum calculator for IBUS
+byte iso_checksum(byte *data, byte len) //len is the number of bytes (not the # of last byte)
+{
+  byte crc=0;
+  for(byte i=0; i<len; i++)
+  {    
+    crc=crc^data[i];
+  }
+  return crc;
+}
 
+void IBUSSend(byte *data) {
+  send_sequence = true;
+  IBUS.write(data, data[1]+2);
+  send_sequence = false;
+  ready2send = false;
+  ibus_time = micros();
+}
 
+void process_ibus_message() {
+  msg_processed = true;
+  if (iso_checksum(IbusBuffer, ibus_len) == IbusBuffer[ibus_len - 1]) {
+    USBSend(IbusBuffer, ibus_len);
+    if (IbusBuffer [2] = DEVS [1]) {
+      cdc_set_parameters();
+    }
+  }
+}
+
+void cdc_set_parameters() {
+  if (ibus_len = sizeof(HU_pulls_CDC)){
+    CDC_Registered = false;
+    
+  } else if (ibus_len = sizeof(HU_ReqPar_CDC)) {
+    CDC_par_sent = false;
+  } else {USB.println("Message not known to CDC!");}
+}
+
+void cdc_announcer() {
+  if (ready2send && !CDC_Registered) {
+    IBUS.write(CDC_Register, sizeof(CDC_Register));
+    CDC_time = millis(); // To not to lose CDC emulation, time based check will be implemented.
+    CDC_Registered = true;
+  } else if (ready2send && !CDC_par_sent) {
+      IBUS.write(CDC_Status, sizeof(CDC_Status));
+      CDC_par_sent = true;
+  }
+}
+
+void USBSend(byte data[], int len) { // Sends ibus buffer to the PC.
+  for (int i=0; i <= len; i++) {
+    USB.print(data[i], HEX);
+    USB.print(" ");
+  }
+  USB.println("");
+}
+
+unsigned long lcd_time = millis();
+int txt_pos = 0;
+string txt [9];
+string artist;
+string album;
+string track;
+byte BusMessage[18] = { //first 6 bytes are fixed (18 bytes max)
+  0xC8,0x10,0x80,0x23,0x42,0x30,0x44,0x61,0x75,0x67,0x68,0x74,0x72,0x79,0x19,0x19,0x19,0x30};//message default
+byte clear_screen [7] = {0xC8, 0x05, 0x80, 0x23, 0x41, 0x20, 0x0F};  //Clear radio display
+
+// it is 9 digit lcd
+void update_lcd { // under heavy implementation!!!
+  if (sizeof(txt)>11){
+    IBUS.write(txt, 11); 
+  }
+  txt = byte(artist + track); // replace the combination according to your wish
+  if (busready) {
+    IBUS.write(txt);
+  }
+}
